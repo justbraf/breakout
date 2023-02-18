@@ -44,7 +44,16 @@ function PlayState:enter(params)
     self.powerup = Powerup(9)
     self.powerup.dy = math.random(60, 70)
     self.powerup.waitTime = math.random(5, 15)
+
+    -- track the time for spawning
     self.spawnTimer = 0
+
+    -- parameters for paddle upgrade
+    self.paddleSize = self.paddle.size
+    self.paddleWidths = { 32, 64, 96, 128 }
+
+    -- points cap variable for upgrading paddle
+    self.paddleUpgradePoints = self.score + 500
 end
 
 function PlayState:update(dt)
@@ -160,6 +169,19 @@ function PlayState:update(dt)
                     gSounds['recover']:play()
                 end
 
+                -- if user score sufficient points then upgrade the paddle
+                if self.score > self.paddleUpgradePoints then
+                    -- I like this calculation for the points cap, so I reimplemented it
+                    self.paddleUpgradePoints = self.paddleUpgradePoints + math.min(100000, self.paddleUpgradePoints * 2)
+
+                    -- upgrade the paddle to the next size
+                    self.paddleSize = math.min(4, self.paddleSize + 1)
+                    -- update paddle size
+                    self.paddle.size = self.paddleSize
+                    -- update paddle width to match selected quad
+                    self.paddle.width = self.paddleWidths[self.paddleSize]
+                end
+
                 -- go to our victory screen if there are no more bricks left
                 if self:checkVictory() then
                     gSounds['victory']:play()
@@ -173,6 +195,7 @@ function PlayState:update(dt)
                         -- only pass in the initial ball and discard te rest if they exist
                         ball = self.ball[1],
                         recoverPoints = self.recoverPoints
+                        -- paddleUpgradePoints = self.paddleUpgradePoints
                     })
                 end
 
@@ -227,8 +250,17 @@ function PlayState:update(dt)
     -- if ball goes below bounds, revert to serve state and decrease health
     for key, ball in pairs(self.ball) do
         if ball.y >= VIRTUAL_HEIGHT then
+            -- check for the last remaining ball
             if table.getn(self.ball) == 1 then
                 self.health = self.health - 1
+
+                -- reduce paddle size because health was lost
+                self.paddleSize = math.max(1, self.paddleSize - 1)
+                -- update paddle size
+                self.paddle.size = self.paddleSize
+                -- update paddle width to match selected quad
+                self.paddle.width = self.paddleWidths[self.paddleSize]
+
                 gSounds['hurt']:play()
 
                 if self.health == 0 then
@@ -245,6 +277,7 @@ function PlayState:update(dt)
                         highScores = self.highScores,
                         level = self.level,
                         recoverPoints = self.recoverPoints
+                        -- paddleUpgradePoints = self.paddleUpgradePoints
                     })
                 end
             else
