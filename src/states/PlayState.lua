@@ -41,6 +41,7 @@ function PlayState:enter(params)
     self.ball[1].dy = math.random( -50, -60)
 
     -- initialize powerup
+    -- self.powerup = {}
     self.powerup = Powerup(9)
     self.powerup.dy = math.random(60, 70)
     self.powerup.waitTime = math.random(5, 15)
@@ -151,11 +152,14 @@ function PlayState:update(dt)
         -- check against all balls
         for key, ball in pairs(self.ball) do
             if brick.inPlay and ball:collides(brick) then
-                -- add to score
-                self.score = self.score + (brick.tier * 200 + brick.color * 25)
+                -- perform brick functions for any brick except the lock brick (color 6) unless the powerup was collected
+                if brick.color ~= 6 or self.powerup.collected then
+                    -- add to score
+                    self.score = self.score + (brick.tier * 200 + brick.color * 25)
 
-                -- trigger the brick's hit function, which removes it from play
-                brick:hit()
+                    -- trigger the brick's hit function, which removes it from play
+                    brick:hit()
+                end
 
                 -- if we have enough points, recover a point of health
                 if self.score > self.recoverPoints then
@@ -251,7 +255,7 @@ function PlayState:update(dt)
     for key, ball in pairs(self.ball) do
         if ball.y >= VIRTUAL_HEIGHT then
             -- check for the last remaining ball
-            if table.getn(self.ball) == 1 then
+            if #self.ball == 1 then
                 self.health = self.health - 1
 
                 -- reduce paddle size because health was lost

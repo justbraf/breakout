@@ -29,15 +29,14 @@ function GenerateQuads(atlas, tilewidth, tileheight)
             sheetCounter = sheetCounter + 1
         end
     end
-
     return spritesheet
 end
 
 --[[
     Utility function for slicing tables, a la Python.
 
-    https://stackoverflow.com/questions/24821045/does-lua-have-something-like-pythons-slice
-]]
+        https://stackoverflow.com/questions/24821045/does-lua-have-something-like-pythons-slice
+        ]]
 function table.slice(tbl, first, last, step)
     local sliced = {}
 
@@ -49,12 +48,17 @@ function table.slice(tbl, first, last, step)
 end
 
 --[[
-    This function is specifically made to piece out the bricks from the
+            This function is specifically made to piece out the bricks from the
     sprite sheet. Since the sprite sheet has non-uniform sprites within,
     we have to return a subset of GenerateQuads.
 ]]
 function GenerateQuadsBricks(atlas)
-    return table.slice(GenerateQuads(atlas, 32, 16), 1, 21)
+    local bricks = {}
+    bricks = table.slice(GenerateQuads(atlas, 32, 16), 1, 21)
+
+    -- add the locked brick to the quad table
+    bricks[22] = GenerateQuads(atlas, 32, 16)[24]
+    return bricks
 end
 
 --[[

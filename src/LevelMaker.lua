@@ -11,19 +11,18 @@
     bricks that the game can render, based on the current level we're at
     in the game.
 ]]
-
 -- global patterns (used to make the entire map a certain shape)
 NONE = 1
 SINGLE_PYRAMID = 2
 MULTI_PYRAMID = 3
 
 -- per-row patterns
-SOLID = 1           -- all colors the same in this row
-ALTERNATE = 2       -- alternate colors
-SKIP = 3            -- skip every other block
-NONE = 4            -- no blocks this row
+SOLID = 1 -- all colors the same in this row
+ALTERNATE = 2 -- alternate colors
+SKIP = 3 -- skip every other block
+NONE = 4 -- no blocks this row
 
-LevelMaker = Class{}
+LevelMaker = Class {}
 
 --[[
     Creates a table of Bricks to be returned to the main game, with different
@@ -47,6 +46,14 @@ function LevelMaker.createMap(level)
     -- highest color of the highest tier, no higher than 5
     local highestColor = math.min(5, level % 5 + 3)
 
+
+    -- initialize parameters for generating a locked brick
+    local lockedBrick = {}
+    -- lockedBrick['row'] = math.random(1,numRows)
+    lockedBrick['col'] = math.random(1, numCols)
+    lockedBrick['active'] = false
+    lockedBrick['inserted'] = false
+
     -- lay out bricks such that they touch each other and fill the space
     for y = 1, numRows do
         -- whether we want to enable skipping for this row
@@ -54,13 +61,13 @@ function LevelMaker.createMap(level)
 
         -- whether we want to enable alternating colors for this row
         local alternatePattern = math.random(1, 2) == 1 and true or false
-        
+
         -- choose two colors to alternate between
         local alternateColor1 = math.random(1, highestColor)
         local alternateColor2 = math.random(1, highestColor)
         local alternateTier1 = math.random(0, highestTier)
         local alternateTier2 = math.random(0, highestTier)
-        
+
         -- used only when we want to skip a block, for skip pattern
         local skipFlag = math.random(2) == 1 and true or false
 
@@ -70,6 +77,12 @@ function LevelMaker.createMap(level)
         -- solid color we'll use if we're not skipping or alternating
         local solidColor = math.random(1, highestColor)
         local solidTier = math.random(0, highestTier)
+
+        -- randomly determine if a locked brick will be generated when adding a row
+        -- increase probability of it occuring by calculating it for every row
+        if not lockedBrick['inserted'] then
+            lockedBrick['active'] = math.random(1, numCols) == numCols
+        end
 
         for x = 1, numCols do
             -- if skipping is turned on and we're on a skip iteration...
@@ -85,14 +98,14 @@ function LevelMaker.createMap(level)
             end
 
             b = Brick(
-                -- x-coordinate
-                (x-1)                   -- decrement x by 1 because tables are 1-indexed, coords are 0
-                * 32                    -- multiply by 32, the brick width
-                + 8                     -- the screen should have 8 pixels of padding; we can fit 13 cols + 16 pixels total
-                + (13 - numCols) * 16,  -- left-side padding for when there are fewer than 13 columns
-                
+            -- x-coordinate
+                (x - 1) -- decrement x by 1 because tables are 1-indexed, coords are 0
+                * 32 -- multiply by 32, the brick width
+                + 8 -- the screen should have 8 pixels of padding; we can fit 13 cols + 16 pixels total
+                + (13 - numCols) * 16, -- left-side padding for when there are fewer than 13 columns
+
                 -- y-coordinate
-                y * 16                  -- just use y * 16, since we need top padding anyway
+                y * 16 -- just use y * 16, since we need top padding anyway
             )
 
             -- if we're alternating, figure out which color/tier we're on
@@ -110,14 +123,22 @@ function LevelMaker.createMap(level)
             if not alternatePattern then
                 b.color = solidColor
                 b.tier = solidTier
-            end 
+            end
+
+            if not lockedBrick['inserted'] and lockedBrick['active'] and lockedBrick['col'] == x then
+                -- overide a normal brick with a locked brick, if the conditions are met
+                -- color 6, tier 1 is a locked brick and tier 0 is the unlocked brick
+                b.color = 6
+                b.tier = 1
+                lockedBrick['inserted'] = true
+            end
 
             table.insert(bricks, b)
 
             -- Lua's version of the 'continue' statement
             ::continue::
         end
-    end 
+    end
 
     -- in the event we didn't generate any bricks, try again
     if #bricks == 0 then

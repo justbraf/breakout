@@ -13,8 +13,7 @@
     bricks are cleared in the current map, the player should be taken to a new
     layout of bricks.
 ]]
-
-Brick = Class{}
+Brick = Class {}
 
 -- some of the colors in our palette (to be used with particle systems)
 paletteColors = {
@@ -47,6 +46,12 @@ paletteColors = {
         ['r'] = 251,
         ['g'] = 242,
         ['b'] = 54
+    },
+    -- black-greyish
+    [6] = {
+        ['r'] = 54,
+        ['g'] = 54,
+        ['b'] = 54
     }
 }
 
@@ -54,12 +59,12 @@ function Brick:init(x, y)
     -- used for coloring and score calculation
     self.tier = 0
     self.color = 1
-    
+
     self.x = x
     self.y = y
     self.width = 32
     self.height = 16
-    
+
     -- used to determine whether this brick should be rendered
     self.inPlay = true
 
@@ -73,8 +78,8 @@ function Brick:init(x, y)
     self.psystem:setParticleLifetime(0.5, 1)
 
     -- give it an acceleration of anywhere between X1,Y1 and X2,Y2 (0, 0) and (80, 80) here
-    -- gives generally downward 
-    self.psystem:setLinearAcceleration(-15, 0, 15, 80)
+    -- gives generally downward
+    self.psystem:setLinearAcceleration( -15, 0, 15, 80)
 
     -- spread of particles; normal looks more natural than uniform
     self.psystem:setEmissionArea('normal', 10, 10)
@@ -106,7 +111,9 @@ function Brick:hit()
 
     -- if we're at a higher tier than the base, we need to go down a tier
     -- if we're already at the lowest color, else just go down a color
-    if self.tier > 0 then
+    if self.color == 6 and self.tier == 1 then
+        self.tier = self.tier - 1
+    elseif self.tier > 0 then
         if self.color == 1 then
             self.tier = self.tier - 1
             self.color = 5
@@ -135,7 +142,7 @@ end
 
 function Brick:render()
     if self.inPlay then
-        love.graphics.draw(gTextures['main'], 
+        love.graphics.draw(gTextures['main'],
             -- multiply color by 4 (-1) to get our color offset, then add tier to that
             -- to draw the correct tier and color brick onto the screen
             gFrames['bricks'][1 + ((self.color - 1) * 4) + self.tier],
