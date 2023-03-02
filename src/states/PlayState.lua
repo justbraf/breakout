@@ -41,10 +41,13 @@ function PlayState:enter(params)
     self.ball[1].dy = math.random( -50, -60)
 
     -- initialize powerup
-    -- self.powerup = {}
-    self.powerup = Powerup(9)
-    self.powerup.dy = math.random(60, 70)
-    self.powerup.waitTime = math.random(5, 15)
+    self.powerup = {}
+    self.powerup['ball'] = Powerup(9)
+    self.powerup['key'] = Powerup(10)
+    for k, pow in pairs(self.powerup) do
+        pow.dy = math.random(60, 70)
+        pow.waitTime = math.random(5, 15)
+    end
 
     -- track the time for spawning
     self.spawnTimer = 0
@@ -73,8 +76,12 @@ function PlayState:update(dt)
 
     -- spawn timer tracks how much time has passed
     self.spawnTimer = self.spawnTimer + dt
-    if self.spawnTimer > self.powerup.waitTime and not self.powerup.collected then
-        self.powerup.active = true
+
+    -- spawn powerup if its spawn time has elapsed
+    for k, pow in pairs(self.powerup) do
+        if self.spawnTimer > pow.waitTime and not pow.collected then
+            pow.active = true
+        end
     end
 
     -- update positions based on velocity
@@ -86,41 +93,49 @@ function PlayState:update(dt)
     end
 
     -- if powerup is active then update it
-    if self.powerup.active and not self.powerup.collected then
-        self.powerup:update(dt)
-    end
+    for k, pow in pairs(self.powerup) do
+        if pow.active and not pow.collected then
+            pow:update(dt)
 
-    -- check if powerup passed the paddle and reached the edge
-    if self.powerup.y >= VIRTUAL_HEIGHT then
-        self.powerup.x = math.random(32, VIRTUAL_WIDTH - 32)
-        self.powerup.y = VIRTUAL_HEIGHT - 145
-        self.powerup.dy = math.random(60, 70)
-        self.powerup.waitTime = math.random(5, 15)
-        self.powerup.active = false
-        self.spawnTimer = 0
-    end
-    -- check for powerup collision
-    if self.powerup:collides(self.paddle) and not self.powerup.collected then
-        self.powerup.collected = true
-        self.powerup.active = false
+            -- check if powerup has passed the paddle and reached the edge
+            -- if so, reset it for the next spawn
+            if pow.y >= VIRTUAL_HEIGHT then
+                pow.x = math.random(32, VIRTUAL_WIDTH - 32)
+                pow.y = VIRTUAL_HEIGHT - 145
+                pow.dy = math.random(60, 70)
+                pow.waitTime = math.random(5, 15) + self.spawnTimer
+                pow.active = false
+                -- self.spawnTimer = 0
+            end
 
-        -- add two more ball objects
-        table.insert(self.ball, Ball())
-        table.insert(self.ball, Ball())
+            -- check for powerup collision
+            if pow:collides(self.paddle) then
+                pow.collected = true
+                pow.active = false
 
-        -- give two new balls random starting velocity and skins
-        for key, ball in pairs(self.ball) do
-            if key ~= 1 then
-                ball.x = self.paddle.x + (self.paddle.width / 2) - 4
-                ball.y = self.paddle.y - 8
-                ball.skin = math.random(7)
-                ball.dx = math.random( -200, 200)
-                ball.dy = math.random( -50, -60)
+                -- add two more ball objects if it is the ball powerup
+                if k == 'ball' then
+                    table.insert(self.ball, Ball())
+                    table.insert(self.ball, Ball())
+
+                    -- give two new balls random starting velocity and skins
+                    for key, ball in pairs(self.ball) do
+                        if key ~= 1 then
+                            ball.x = self.paddle.x + (self.paddle.width / 2) - 4
+                            ball.y = self.paddle.y - 8
+                            ball.skin = math.random(7)
+                            ball.dx = math.random( -200, 200)
+                            ball.dy = math.random( -50, -60)
+                        end
+                    end
+                end
+
+                -- play sound effect to indicate powerup collected
+                gSounds['powerup']:play()
             end
         end
-
-        gSounds['powerup']:play()
     end
+
 
     -- check collisions for all balls
     for key, ball in pairs(self.ball) do
@@ -153,7 +168,7 @@ function PlayState:update(dt)
         for key, ball in pairs(self.ball) do
             if brick.inPlay and ball:collides(brick) then
                 -- perform brick functions for any brick except the lock brick (color 6) unless the powerup was collected
-                if brick.color ~= 6 or self.powerup.collected then
+                if not (brick.color == 6 and brick.tier == 1) or self.powerup['key'].collected then
                     -- add to score
                     self.score = self.score + (brick.tier * 200 + brick.color * 25)
 
@@ -318,9 +333,11 @@ function PlayState:render()
         ball:render()
     end
 
-    -- if powerup is in play then render it
-    if self.powerup.active then
-        self.powerup:render()
+    -- if powerups are in play then render it
+    for k, pow in pairs(self.powerup) do
+        if pow.active then
+            pow:render()
+        end
     end
 
     renderScore(self.score)
